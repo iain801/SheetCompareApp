@@ -3,6 +3,7 @@
 #include "wx/wx.h"
 #include "wx/filepicker.h"
 #include "wx/valnum.h"
+#include "Compare.h"
 
 class cFrame : public wxFrame
 {
