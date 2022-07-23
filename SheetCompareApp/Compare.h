@@ -2,6 +2,7 @@
 #include "libxl.h"
 #include <string>
 #include <list>
+#include <map>
 
 class Compare
 {
@@ -20,6 +21,10 @@ private:
 	libxl::Book* dest = nullptr;
 	libxl::Sheet* srcSheet = nullptr;
 	libxl::Sheet* destSheet = nullptr;
+
+	std::map<std::wstring, int> addedRecords;
+	std::map<std::wstring, int> deletedRecords;
+	std::map<std::wstring, std::pair<int,int>> consistantRecords;
 
 	int getSheet(libxl::Book* book, std::wstring label);
 	int getRow(libxl::Sheet* sheet, std::wstring label, int idCol);

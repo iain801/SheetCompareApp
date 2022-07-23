@@ -79,7 +79,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)wxWidgets-3.2.0\include;$(SolutionDir)wxWidgets-3.2.0\include\msvc;$(SolutionDir)libxl\include_cpp</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>%(AdditionalDependencies);libxl.lib</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)wxWidgets-3.2.0\lib\vc_lib;$(SolutionDir)libxl\lib</AdditionalLibraryDirectories>
@@ -96,7 +96,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)wxWidgets-3.2.0\include;$(SolutionDir)wxWidgets-3.2.0\include\msvc;$(SolutionDir)libxl\include_cpp</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -113,7 +113,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)wxWidgets-3.2.0\include;$(SolutionDir)wxWidgets-3.2.0\include\msvc;$(SolutionDir)libxl\include_cpp</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)wxWidgets-3.2.0\lib\vc_x64_lib;$(SolutionDir)libxl\lib64</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(CoreLibraryDependencies);libxl.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -130,7 +130,7 @@
       <AdditionalIncludeDirectories>$(SolutionDir)wxWidgets-3.2.0\include;$(SolutionDir)wxWidgets-3.2.0\include\msvc;$(SolutionDir)libxl\include_cpp</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>

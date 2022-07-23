@@ -18,7 +18,7 @@ cFrame::cFrame() : wxFrame(nullptr, wxID_ANY, "Spreadsheet Compare - Erasca", wx
 	rowInput = new wxTextCtrl(this, wxID_ANY, "", wxPoint(260, 95), wxSize(30, 20), 0L, wxIntegerValidator<unsigned int>());
 	srcText = new wxStaticText(this, wxID_ANY, "Old Spreadsheet: ", wxPoint(10, 2));
 	srcFile = new wxFilePickerCtrl(this, 10002, "", "", "XLSX and XLS files (*.xlsx;*.xls)|*.xlsx;*.xls", wxPoint(10, 20), wxSize(300, 20));
-	srcText = new wxStaticText(this, wxID_ANY, "New Spreadsheet: ", wxPoint(10, 42));
+	dstText = new wxStaticText(this, wxID_ANY, "New Spreadsheet: ", wxPoint(10, 42));
 	dstFile = new wxFilePickerCtrl(this, 10003, "", "", "XLSX and XLS files (*.xlsx;*.xls)|*.xlsx;*.xls", wxPoint(10, 60), wxSize(300, 20));
 	//output = new wxTextCtrl (this, wxID_ANY, "", wxPoint(10, 135), wxSize(300, 200), wxTE_READONLY + wxTE_MULTILINE);
 

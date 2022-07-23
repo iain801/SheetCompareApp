@@ -39,12 +39,30 @@ Compare::Compare(std::wstring sourcePath, std::wstring destinationPath, unsigned
 	std::wcout << "Loaded books" << std::endl;
 }
 
-Compare::~Compare() {
+Compare::~Compare() 
+{
 	dest->save(destPath.replace(destPath.find(L".xls"), 4, L"_processed.xls").c_str());
 	std::wcout << "Output saved as: " << destPath << std::endl;
 
 	src->release();
 	dest->release();
+}
+
+void Compare::CompareBooks()
+{
+	/* TODO:
+	* 
+	*  - CREATE OUT BOOK
+	* 
+	*  - go thru each sheet and in each sheet
+	*  - go thru src(old) and if any are missing from dest, add to deleted
+	*  - if in both, add to consistant
+	*  - go thru dest(new) and if any are missing from src, add to added
+	* 
+	*  - go through each consistant row, and if there are changes then 
+	*    add it to the out sheet with changes highlighted
+	* 
+	*/
 }
 
 int Compare::getSheet(libxl::Book* book, std::wstring label)
