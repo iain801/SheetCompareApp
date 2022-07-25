@@ -1,7 +1,7 @@
 #pragma once
 #include "libxl.h"
 #include <string>
-#include <list>
+#include <queue>
 #include <map>
 
 class Compare
@@ -12,6 +12,7 @@ public:
 	~Compare();
 
 	void CompareBooks();
+	bool isID();
 
 private:
 	unsigned int headRow;
@@ -19,16 +20,14 @@ private:
 	std::wstring destPath;
 	libxl::Book* src = nullptr;
 	libxl::Book* dest = nullptr;
+	libxl::Book* output = nullptr;
 	libxl::Sheet* srcSheet = nullptr;
 	libxl::Sheet* destSheet = nullptr;
-
-	std::map<std::wstring, int> addedRecords;
-	std::map<std::wstring, int> deletedRecords;
-	std::map<std::wstring, std::pair<int,int>> consistantRecords;
+	libxl::Sheet* outSheet = nullptr;
 
 	int getSheet(libxl::Book* book, std::wstring label);
 	int getRow(libxl::Sheet* sheet, std::wstring label, int idCol);
 	int getCol(libxl::Sheet* sheet, std::wstring label);
-	std::list<int> getColList(libxl::Sheet* sheet, std::wstring label);
+	std::queue<int> getColList(libxl::Sheet* sheet, std::wstring label);
 };
 

@@ -37,11 +37,14 @@ Compare::Compare(std::wstring sourcePath, std::wstring destinationPath, unsigned
 	src->load(srcPath.c_str());
 	dest->load(destPath.c_str());
 	std::wcout << "Loaded books" << std::endl;
+
+	output = xlCreateXMLBook();
+	output->setKey(L"Iain Weissburg", L"windows-2a242a0d01cfe90a6ab8666baft2map2");
 }
 
 Compare::~Compare() 
 {
-	dest->save(destPath.replace(destPath.find(L".xls"), 4, L"_processed.xls").c_str());
+	output->save(destPath.replace(destPath.find(L".xls"), 5, L"_comparison.xlsm").c_str());
 	std::wcout << "Output saved as: " << destPath << std::endl;
 
 	src->release();
@@ -52,8 +55,6 @@ void Compare::CompareBooks()
 {
 	/* TODO:
 	* 
-	*  - CREATE OUT BOOK
-	* 
 	*  - go thru each sheet and in each sheet
 	*  - go thru src(old) and if any are missing from dest, add to deleted
 	*  - if in both, add to consistant
@@ -63,6 +64,59 @@ void Compare::CompareBooks()
 	*    add it to the out sheet with changes highlighted
 	* 
 	*/
+	std::map<std::wstring, int> addedRecords;
+	std::map<std::wstring, int> deletedRecords;
+	std::map<std::wstring, std::pair<int,int>> consistantRecords;
+	std::map<std::wstring, int> srcMap;
+	std::map<std::wstring, int> destMap;
+
+
+	int srcSheetNum, destSheetNum, outSheetNum;
+	for (srcSheetNum = 0; srcSheetNum < src->sheetCount(); srcSheetNum++) 
+	{
+		srcSheet = src->getSheet(srcSheetNum);
+		destSheetNum = getSheet(dest, srcSheet->name());
+
+		if (destSheetNum >= 0) 
+		{
+			destSheet = dest->getSheet(destSheetNum);
+			outSheet = output->addSheet(srcSheet->name());
+
+			int srcIDCol = getCol(srcSheet, L"unique");
+			int destIDCol = getCol(destSheet, L"unique");
+
+			for (int row = headRow + 1; row < srcSheet->lastFilledRow(); row++)
+			{
+				std::wstring id = srcSheet->readStr(row, srcIDCol);
+				srcMap.insert(std::make_pair(id, row));
+			}
+			for (int row = headRow + 1; row < destSheet->lastFilledRow(); row++)
+			{
+				std::wstring id = destSheet->readStr(row, destIDCol);
+				destMap.insert(std::make_pair(id, row));
+			}
+
+			for (auto srcit = srcMap.begin(); srcit != srcMap.end(); srcit++) 
+			{
+				auto destit = destMap.find(srcit->first);
+				if (destit == destMap.end())
+					deletedRecords.insert(*srcit);
+				else
+				{
+					consistantRecords.insert(std::make_pair(srcit->first,
+						std::make_pair(srcit->second, destit->second)));
+				}
+			}
+
+		}
+	}
+
+}
+
+bool Compare::isID()
+{
+	return getCol(src->getSheet(0), L"unique") != -1
+		&& getCol(dest->getSheet(0), L"unique") != -1;
 }
 
 int Compare::getSheet(libxl::Book* book, std::wstring label)
@@ -91,14 +145,14 @@ int Compare::getCol(Sheet* sheet, std::wstring label)
 {
 	auto colList = getColList(sheet, label);
 	if (colList.empty())
-		return sheet->lastFilledCol();
+		return -1;
 	else
 		return colList.front();
 }
 
-std::list<int> Compare::getColList(Sheet* sheet, std::wstring label)
+std::queue<int> Compare::getColList(Sheet* sheet, std::wstring label)
 {
-	std::list<int> colList(0);
+	std::queue<int> colList;
 	for (int col = sheet->firstFilledCol(); col < sheet->lastFilledCol(); col++)
 	{
 		if (sheet->cellType(headRow, col) == CELLTYPE_STRING)
@@ -107,7 +161,7 @@ std::list<int> Compare::getColList(Sheet* sheet, std::wstring label)
 			std::transform(cellData.begin(), cellData.end(), cellData.begin(),
 				[](wchar_t c) { return tolower(c); });
 			if (cellData.find(label) != std::wstring::npos)
-				colList.push_back(col);
+				colList.push(col);
 		}
 	}
 	return colList;
