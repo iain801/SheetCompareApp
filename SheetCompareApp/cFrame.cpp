@@ -38,20 +38,33 @@ void cFrame::PerformTransfer(wxCommandEvent& evt)
 	btn1->SetLabelText("Running...");
 	std::wstring srcPath = srcFile->GetPath().ToStdWstring();
 	std::wstring destPath = dstFile->GetPath().ToStdWstring();
-	//output->Clear();
 	auto rowText = rowInput->GetLineText(0).ToStdString();
+	if (srcPath.find(L".xls") == std::wstring::npos)
+		btn1->SetLabelText("Invalid Comment");
+	else if (destPath.find(L".xls") == std::wstring::npos)
+		btn1->SetLabelText("Invalid Data");
+	//output->Clear();
+	
 	if (!rowText.empty())
 	{
 		int row = std::stoi(rowText) - 1;
 		Compare* comp = new Compare(srcPath, destPath, row);
-		comp->CompareBooks();
-		delete comp;
-		btn1->SetLabelText("Finished!");
+		if (comp->isID())
+		{
+			comp->CompareBooks();
+			delete comp;
+			btn1->SetLabelText("Finished!");
+		}
+		else
+		{
+			btn1->SetLabelText("No Unique ID");
+		}
 	}
 	else
 	{
 		btn1->SetLabelText("No Row Selected");
 	}
+
 	evt.Skip();
 }
 
