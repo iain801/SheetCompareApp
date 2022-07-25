@@ -44,32 +44,18 @@ Compare::Compare(std::wstring sourcePath, std::wstring destinationPath, unsigned
 
 Compare::~Compare() 
 {
-	output->save(destPath.replace(destPath.find(L".xls"), 5, L"_comparison.xlsm").c_str());
+	output->save(destPath.replace(destPath.find(L".xls"), 5, L"_comparison.xlsx").c_str());
 	std::wcout << "Output saved as: " << destPath << std::endl;
 
+	output->release();
 	src->release();
 	dest->release();
 }
 
 void Compare::CompareBooks()
 {
-	/* TODO:
-	* 
-	*  - go thru each sheet and in each sheet
-	*  - go thru src(old) and if any are missing from dest, add to deleted
-	*  - if in both, add to consistant
-	*  - go thru dest(new) and if any are missing from src, add to added
-	* 
-	*  - go through each consistant row, and if there are changes then 
-	*    add it to the out sheet with changes highlighted
-	* 
-	*/
-	std::map<std::wstring, int> addedRecords;
-	std::map<std::wstring, int> deletedRecords;
-	std::map<std::wstring, std::pair<int,int>> consistantRecords;
-	std::map<std::wstring, int> srcMap;
-	std::map<std::wstring, int> destMap;
-
+	std::unordered_map<std::wstring, int> srcMap;
+	std::unordered_map<std::wstring, int> destMap;
 
 	int srcSheetNum, destSheetNum, outSheetNum;
 	for (srcSheetNum = 0; srcSheetNum < src->sheetCount(); srcSheetNum++) 
@@ -77,39 +63,131 @@ void Compare::CompareBooks()
 		srcSheet = src->getSheet(srcSheetNum);
 		destSheetNum = getSheet(dest, srcSheet->name());
 
-		if (destSheetNum >= 0) 
+		if (destSheetNum == -1)
+			continue;
+
+		destSheet = dest->getSheet(destSheetNum);
+		outSheet = output->addSheet(srcSheet->name());
+
+		int srcIDCol = getCol(srcSheet, L"unique");
+		int destIDCol = getCol(destSheet, L"unique");
+
+		srcMap.reserve(srcSheet->lastFilledRow());
+		destMap.reserve(destSheet->lastFilledRow());
+
+		//Add all rows to maps for faster search
+		for (int row = headRow + 1; row < srcSheet->lastFilledRow(); row++)
 		{
-			destSheet = dest->getSheet(destSheetNum);
-			outSheet = output->addSheet(srcSheet->name());
-
-			int srcIDCol = getCol(srcSheet, L"unique");
-			int destIDCol = getCol(destSheet, L"unique");
-
-			for (int row = headRow + 1; row < srcSheet->lastFilledRow(); row++)
+			std::wstring id = srcSheet->readStr(row, srcIDCol);
+			srcMap[id] = row;
+		}
+		for (int row = headRow + 1; row < destSheet->lastFilledRow(); row++)
+		{
+			std::wstring id = destSheet->readStr(row, destIDCol);
+			destMap[id] = row;
+		}
+		
+		deletedRecords.reserve(srcMap.size());
+		consistantRecords.reserve(std::min(srcMap.size(), destMap.size()));
+		
+		//Add all srcMap elements to deleted or consistant
+		for (auto srcit = srcMap.begin(); srcit != srcMap.end(); srcit = srcMap.erase(srcit)) 
+		{
+			auto destit = destMap.find(srcit->first);
+			if (destit == destMap.end())
+				deletedRecords.insert(*srcit);
+			else
 			{
-				std::wstring id = srcSheet->readStr(row, srcIDCol);
-				srcMap.insert(std::make_pair(id, row));
+				consistantRecords[srcit->first] = std::make_pair(srcit->second, destit->second);
+				destMap.erase(destit);
 			}
-			for (int row = headRow + 1; row < destSheet->lastFilledRow(); row++)
-			{
-				std::wstring id = destSheet->readStr(row, destIDCol);
-				destMap.insert(std::make_pair(id, row));
-			}
+		}
+		srcMap.clear();
+		deletedRecords.rehash(deletedRecords.size());
+		consistantRecords.rehash(consistantRecords.size());
 
-			for (auto srcit = srcMap.begin(); srcit != srcMap.end(); srcit++) 
-			{
-				auto destit = destMap.find(srcit->first);
-				if (destit == destMap.end())
-					deletedRecords.insert(*srcit);
-				else
-				{
-					consistantRecords.insert(std::make_pair(srcit->first,
-						std::make_pair(srcit->second, destit->second)));
-				}
-			}
+		addedRecords.reserve(destMap.size());
+		addedRecords = destMap;
+		destMap.clear();
 
+		UpdateCols();
+		CompareSheets();
+
+		addedRecords.clear();
+		deletedRecords.clear();
+		consistantRecords.clear();
+		allCols.clear();
+
+	}
+
+}
+
+void Compare::UpdateCols()
+{
+
+	std::map<std::wstring, int> destMap;
+	for (int col = destSheet->firstFilledCol(); col < destSheet->lastFilledCol(); col++)
+	{
+		std::wstring id = destSheet->readStr(headRow, col);
+		destMap[id] = col;
+	}
+
+	for (int col = srcSheet->firstFilledCol(); col < srcSheet->lastFilledCol(); col++)
+	{
+		std::wstring id = srcSheet->readStr(headRow, col);
+		auto destit = destMap.find(id);
+		if (destit == destMap.end())
+			allCols[id] = std::make_pair(col, -1);
+		else
+		{
+			allCols[id] = std::make_pair(col, destit->second);
+			destMap.erase(destit);
 		}
 	}
+	for (auto destit = destMap.begin(); destit != destMap.end(); destit = destMap.erase(destit))
+	{
+		allCols[destit->first] = std::make_pair(-1, destit->second);
+	}
+	destMap.clear();
+	
+}
+
+void Compare::CompareSheets()
+{
+	int row = 0, col = 0;
+	
+	Format* blank = output->addFormat();
+	Format* header = output->addFormat();
+	header->setFillPattern(FILLPATTERN_GRAY50);
+	header->setPatternForegroundColor(COLOR_ICEBLUE_CF);
+	header->setBorderLeft();
+	header->setBorderRight();
+	header->setBorderTop();
+	header->setBorderBottom();
+	header->setAlignH(ALIGNH_CENTER);
+	header->setWrap(true);
+
+	Format* modified = output->addFormat();
+	modified->setFillPattern(FILLPATTERN_GRAY50);
+	modified->setPatternForegroundColor(COLOR_LIGHTYELLOW);
+
+	Format* added = output->addFormat();
+	added->setFillPattern(FILLPATTERN_GRAY50);
+	added->setPatternForegroundColor(COLOR_LIGHTGREEN);
+
+	Format* deleted = output->addFormat();
+	deleted->setFillPattern(FILLPATTERN_GRAY50);
+	deleted->setPatternForegroundColor(COLOR_ROSE);
+
+	for (auto colit = allCols.begin(); colit != allCols.end(); colit++, col++)
+	{
+		outSheet->writeStr(row, col, colit->first.c_str(), header);
+		if (colit->second.first != -1)
+			outSheet->setCol(col, col, srcSheet->colWidth(colit->second.first));
+		else
+			outSheet->setCol(col, col, destSheet->colWidth(colit->second.second));
+	}
+	outSheet->setRow(row, srcSheet->rowHeight(headRow));
 
 }
 

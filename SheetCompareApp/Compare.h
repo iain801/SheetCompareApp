@@ -2,6 +2,7 @@
 #include "libxl.h"
 #include <string>
 #include <queue>
+#include <unordered_map>
 #include <map>
 
 class Compare
@@ -24,6 +25,14 @@ private:
 	libxl::Sheet* srcSheet = nullptr;
 	libxl::Sheet* destSheet = nullptr;
 	libxl::Sheet* outSheet = nullptr;
+
+	std::unordered_map<std::wstring, int> addedRecords;
+	std::unordered_map<std::wstring, int> deletedRecords;
+	std::unordered_map<std::wstring, std::pair<int,int>> consistantRecords;
+	std::map<std::wstring, std::pair<int, int>> allCols;
+
+	void UpdateCols();
+	void CompareSheets();
 
 	int getSheet(libxl::Book* book, std::wstring label);
 	int getRow(libxl::Sheet* sheet, std::wstring label, int idCol);
