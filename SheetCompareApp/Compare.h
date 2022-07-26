@@ -1,14 +1,13 @@
 #pragma once
 #include "libxl.h"
 #include <string>
-#include <queue>
+#include <deque>
 #include <unordered_map>
-#include <map>
 
 class Compare
 {
 public:
-	Compare(std::wstring srcPath, std::wstring destPath,
+	Compare(std::wstring pastPath, std::wstring recentPath,
 		unsigned int headRow);
 	~Compare();
 
@@ -16,20 +15,29 @@ public:
 	bool isID();
 
 private:
+	struct cpastata {
+		std::wstring label;
+		int past, recent, out;
+
+		cpastata(std::wstring label, int past = -1, int recent = -1, int out = -1) 
+			: label(label), past(past), recent(recent), out(out) { }
+	};
+
+
 	unsigned int headRow;
-	std::wstring srcPath;
-	std::wstring destPath;
-	libxl::Book* src = nullptr;
-	libxl::Book* dest = nullptr;
+	std::wstring pastPath;
+	std::wstring recentPath;
+	libxl::Book* past = nullptr;
+	libxl::Book* recent = nullptr;
 	libxl::Book* output = nullptr;
-	libxl::Sheet* srcSheet = nullptr;
-	libxl::Sheet* destSheet = nullptr;
+	libxl::Sheet* pastSheet = nullptr;
+	libxl::Sheet* recentSheet = nullptr;
 	libxl::Sheet* outSheet = nullptr;
 
 	std::unordered_map<std::wstring, int> addedRecords;
 	std::unordered_map<std::wstring, int> deletedRecords;
 	std::unordered_map<std::wstring, std::pair<int,int>> consistantRecords;
-	std::map<std::wstring, std::pair<int, int>> allCols;
+	std::deque<cpastata> allCols;
 
 	void UpdateCols();
 	void CompareSheets();
@@ -37,6 +45,8 @@ private:
 	int getSheet(libxl::Book* book, std::wstring label);
 	int getRow(libxl::Sheet* sheet, std::wstring label, int idCol);
 	int getCol(libxl::Sheet* sheet, std::wstring label);
-	std::queue<int> getColList(libxl::Sheet* sheet, std::wstring label);
+	std::deque<int> getColList(libxl::Sheet* sheet, std::wstring label);
+
+	std::wstring getCellString(libxl::Sheet* sheet, int row, int col);
 };
 

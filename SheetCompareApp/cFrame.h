@@ -12,13 +12,13 @@ public:
 	~cFrame();
 
 	wxButton* btn1 = nullptr;
-	wxFilePickerCtrl* srcFile = nullptr;
-	wxFilePickerCtrl* dstFile = nullptr;
+	wxFilePickerCtrl* pastFile = nullptr;
+	wxFilePickerCtrl* recentFile = nullptr;
 	wxTextCtrl* rowInput = nullptr;
 	//wxTextCtrl* output = nullptr;
 
-	wxStaticText* srcText = nullptr;
-	wxStaticText* dstText = nullptr;
+	wxStaticText* pastText = nullptr;
+	wxStaticText* recentText = nullptr;
 	wxStaticText* rowText = nullptr;
 
 	void PerformTransfer(wxCommandEvent& evt);
