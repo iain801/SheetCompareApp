@@ -1,3 +1,7 @@
+/*
+* Author: Iain Weissburg
+* Date: 8/1/2022
+*/
 #pragma once
 
 #include "wx/wx.h"

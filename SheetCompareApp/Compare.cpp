@@ -1,3 +1,9 @@
+/*
+* Author: Iain Weissburg
+* Date: 8/1/2022
+*/
+
+
 #include "Compare.h"
 #include <iostream>
 #include <algorithm>
@@ -9,11 +15,12 @@ using namespace libxl;
 Compare::Compare(std::wstring sourcePath, std::wstring recentinationPath, unsigned int headRow)
 	: pastPath(sourcePath), recentPath(recentinationPath), headRow(headRow)
 {
+	//Check if input paths are the same
 	if (pastPath.compare(recentPath) == 0) {
 		std::wcout << "ERROR: Duplicate input paths" << std::endl;
 		return;
 	}
-
+	//Create past book with the correct filetype (xls or xlsx)
 	if (pastPath.find(L".xlsx") != std::wstring::npos)
 		past = xlCreateXMLBook();
 	else if (pastPath.find(L".xls") != std::wstring::npos)
@@ -22,9 +29,10 @@ Compare::Compare(std::wstring sourcePath, std::wstring recentinationPath, unsign
 		std::wcout << "ERROR: Invaid source filetype" << std::endl;
 		return;
 	}
-	past->setKey(L"Iain Weissburg", L"windows-2a242a0d01cfe90a6ab8666baft2map2");
+	past->setKey(L"Iain Weissburg", L"windows-2a242a0d01cfe90a6ab8666baft2map2"); // register the book
 	std::wcout << "Created source book" << std::endl;
 
+	//Create recent book
 	if (recentPath.find(L".xlsx") != std::wstring::npos)
 		recent = xlCreateXMLBook();
 	else if (recentPath.find(L".xls") != std::wstring::npos)
@@ -36,19 +44,23 @@ Compare::Compare(std::wstring sourcePath, std::wstring recentinationPath, unsign
 	recent->setKey(L"Iain Weissburg", L"windows-2a242a0d01cfe90a6ab8666baft2map2");
 	std::wcout << "Created recentination book" << std::endl;
 
+	//Load files into the books
 	past->load(pastPath.c_str());
 	recent->load(recentPath.c_str());
 	std::wcout << "Loaded books" << std::endl;
 
+	//Create book for output report
 	output = xlCreateXMLBook();
 	output->setKey(L"Iain Weissburg", L"windows-2a242a0d01cfe90a6ab8666baft2map2");
 }
 
 Compare::~Compare() 
 {
+	//Save the output book
 	output->save(recentPath.replace(recentPath.find(L".xls"), 5, L"_comparison.xlsx").c_str());
 	std::wcout << "Output saved as: " << recentPath << std::endl;
 
+	//Close all books
 	output->release();
 	past->release();
 	recent->release();
@@ -56,24 +68,31 @@ Compare::~Compare()
 
 void Compare::CompareBooks()
 {
+	//Hash maps for faster search through rows
 	std::unordered_map<std::wstring, int> pastMap;
 	std::unordered_map<std::wstring, int> recentMap;
 
+	//For each sheet
 	int pastSheetNum, recentSheetNum;
 	for (pastSheetNum = 0; pastSheetNum < past->sheetCount(); pastSheetNum++) 
 	{
+		//Find the corrosponding sheet in past and recent
 		pastSheet = past->getSheet(pastSheetNum);
 		recentSheetNum = getSheet(recent, pastSheet->name());
 
+		//If sheet is only in one book, skip it
 		if (recentSheetNum == -1)
 			continue;
 
+		//Create sheet in output book
 		recentSheet = recent->getSheet(recentSheetNum);
 		outSheet = output->addSheet(pastSheet->name());
 
+		//Get unique id column in both sheets
 		int pastIDCol = getCol(pastSheet, L"unique");
 		int recentIDCol = getCol(recentSheet, L"unique");
 
+		//reserve space in maps
 		pastMap.reserve(pastSheet->lastFilledRow());
 		recentMap.reserve(recentSheet->lastFilledRow());
 
@@ -89,7 +108,10 @@ void Compare::CompareBooks()
 			recentMap[id] = row;
 		}
 		
+		//reserve space in deleted map
 		deletedRecords.reserve(pastMap.size());
+
+		//reserve space in consistant map equal to minimum of both row counts
 		consistantRecords.reserve(std::min(pastMap.size(), recentMap.size()));
 		
 		//Add all pastMap elements to deleted or consistant
@@ -97,24 +119,28 @@ void Compare::CompareBooks()
 		{
 			auto recentit = recentMap.find(pastit->first);
 			if (recentit == recentMap.end())
-				deletedRecords.insert(*pastit);
+				deletedRecords.insert(*pastit); //if not found in recent, add to deleted
 			else
 			{
-				consistantRecords[pastit->first] = std::make_pair(pastit->second, recentit->second);
-				recentMap.erase(recentit);
+				consistantRecords[pastit->first] = std::make_pair(pastit->second, recentit->second); // if in both, add to consistant
+				recentMap.erase(recentit); //delete from recent
 			}
 		}
+
+		//clear past and rehash deleted and consistant to restore memory space
 		pastMap.clear();
 		deletedRecords.rehash(deletedRecords.size());
 		consistantRecords.rehash(consistantRecords.size());
 
+		//add all remaining recent records to added map
 		addedRecords.reserve(recentMap.size());
 		addedRecords = recentMap;
 		recentMap.clear();
 
-		UpdateCols();
-		CompareSheets();
+		UpdateCols(); //adds all columns to a deque
+		CompareSheets(); //writes records to output sheet
 
+		//clear all class data structures
 		addedRecords.clear();
 		deletedRecords.clear();
 		consistantRecords.clear();
@@ -139,16 +165,16 @@ void Compare::UpdateCols()
 		std::wstring id = pastSheet->readStr(headRow, col);
 		auto recentit = recentMap.find(id);
 		if (recentit == recentMap.end())
-			allCols.push_back(cpastata(id, col, -1));
+			allCols.push_back(ColData(id, col, -1));
 		else
 		{
-			allCols.push_back(cpastata(id, col, recentit->second));
+			allCols.push_back(ColData(id, col, recentit->second));
 			recentMap.erase(recentit);
 		}
 	}
 	for (auto recentit = recentMap.begin(); recentit != recentMap.end(); recentit = recentMap.erase(recentit))
 	{
-		allCols.push_back(cpastata(recentit->first, -1, recentit->second));
+		allCols.push_back(ColData(recentit->first, -1, recentit->second));
 	}
 	recentMap.clear();
 	
